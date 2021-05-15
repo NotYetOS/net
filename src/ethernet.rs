@@ -256,7 +256,7 @@ mod test_dev {
          0x00, 0xff];
          
     #[test]
-    fn test_raw_socket() {
+    fn test_protocol_through_raw_socket() {
         use rawsock::open_best_library;
 
         const ICMP_PACKET: [u8; 98] = [
