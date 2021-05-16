@@ -51,15 +51,15 @@ impl From<u16> for EtherType {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct MacAddress([u8;6]);
+pub struct Address([u8;6]);
 
-impl MacAddress {
-    pub const BROADCAST: MacAddress = MacAddress([0xFF; 6]);
+impl Address {
+    pub const BROADCAST: Address = Address([0xFF; 6]);
 
     pub fn from_bytes(data: &[u8]) -> Self {
         let mut addr = [0; 6];
         addr.copy_from_slice(&data);
-        MacAddress(addr)
+        Address(addr)
     }
 
     pub fn as_bytes(&self) -> &[u8] {
@@ -131,14 +131,14 @@ impl<T: AsRef<[u8]>> Frame<T> {
         HEADER_LEN + payload_len
     }
 
-    pub fn dst_addr(&self) -> MacAddress {
+    pub fn dst_addr(&self) -> Address {
         let buf_ref = self.buffer.as_ref();
-        MacAddress::from_bytes(&buf_ref[field::DESTINATION])
+        Address::from_bytes(&buf_ref[field::DESTINATION])
     }
 
-    pub fn src_addr(&self) -> MacAddress {
+    pub fn src_addr(&self) -> Address {
         let buf_ref = self.buffer.as_ref();
-        MacAddress::from_bytes(&buf_ref[field::SOURCE])
+        Address::from_bytes(&buf_ref[field::SOURCE])
     }
 
     pub fn ether_type(&self) -> EtherType {
@@ -155,12 +155,12 @@ impl<T: AsRef<[u8]>> Frame<T> {
 }
 
 impl<T: AsRef<[u8]> + AsMut<[u8]>> Frame<T> {
-    pub fn set_dst_addr(&mut self, addr: MacAddress) {
+    pub fn set_dst_addr(&mut self, addr: Address) {
         let buf_mut_ref = self.buffer.as_mut();
         buf_mut_ref[field::DESTINATION].copy_from_slice(addr.as_bytes())
     }
 
-    pub fn set_src_addr(&mut self, addr: MacAddress) {
+    pub fn set_src_addr(&mut self, addr: Address) {
         let buf_mut_ref = self.buffer.as_mut();
         buf_mut_ref[field::SOURCE].copy_from_slice(addr.as_bytes())
     }
@@ -188,10 +188,10 @@ mod test {
 
     #[test]
     fn test_broadcast() {
-        assert!(MacAddress::BROADCAST.is_broadcast());
-        assert!(!MacAddress::BROADCAST.is_unicast());
-        assert!(MacAddress::BROADCAST.is_multicast());
-        assert!(MacAddress::BROADCAST.is_local());
+        assert!(Address::BROADCAST.is_broadcast());
+        assert!(!Address::BROADCAST.is_unicast());
+        assert!(Address::BROADCAST.is_multicast());
+        assert!(Address::BROADCAST.is_local());
     }
 }
 
@@ -224,8 +224,8 @@ mod test_ipv4 {
     #[test]
     fn test_deconstruct() {
         let frame = Frame::new_unchecked(&FRAME_BYTES[..]);
-        assert_eq!(frame.dst_addr(), MacAddress([0x01, 0x02, 0x03, 0x04, 0x05, 0x06]));
-        assert_eq!(frame.src_addr(), MacAddress([0x11, 0x12, 0x13, 0x14, 0x15, 0x16]));
+        assert_eq!(frame.dst_addr(), Address([0x01, 0x02, 0x03, 0x04, 0x05, 0x06]));
+        assert_eq!(frame.src_addr(), Address([0x11, 0x12, 0x13, 0x14, 0x15, 0x16]));
         assert_eq!(frame.ether_type(), EtherType::IPv4);
         assert_eq!(frame.payload(), &PAYLOAD_BYTES[..]);
     }
@@ -234,8 +234,8 @@ mod test_ipv4 {
     fn test_construct() {
         let mut bytes = vec![0xa5; 64];
         let mut frame = Frame::new_unchecked(&mut bytes);
-        frame.set_dst_addr(MacAddress([0x01, 0x02, 0x03, 0x04, 0x05, 0x06]));
-        frame.set_src_addr(MacAddress([0x11, 0x12, 0x13, 0x14, 0x15, 0x16]));
+        frame.set_dst_addr(Address([0x01, 0x02, 0x03, 0x04, 0x05, 0x06]));
+        frame.set_src_addr(Address([0x11, 0x12, 0x13, 0x14, 0x15, 0x16]));
         frame.set_ether_type(EtherType::IPv4);
         frame.payload_mut().copy_from_slice(&PAYLOAD_BYTES[..]);
         assert_eq!(&frame.into_inner()[..], &FRAME_BYTES[..]);
@@ -271,8 +271,8 @@ mod test_dev {
 
         let mut bytes = vec![0xa5; 64];
         let mut frame = Frame::new_unchecked(&mut bytes);
-        frame.set_dst_addr(MacAddress([0x00, 0x15, 0x5d, 0xdb, 0x4d, 0xb4]));
-        frame.set_src_addr(MacAddress([0x00, 0x15, 0x5d, 0x07, 0x2f, 0x7c]));
+        frame.set_dst_addr(Address([0x00, 0x15, 0x5d, 0xdb, 0x4d, 0xb4]));
+        frame.set_src_addr(Address([0x00, 0x15, 0x5d, 0x07, 0x2f, 0x7c]));
         frame.set_ether_type(EtherType::ECTP);
         frame.payload_mut().copy_from_slice(&PAYLOAD_BYTES[..]);
 
