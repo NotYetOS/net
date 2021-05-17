@@ -4,6 +4,11 @@ use super::{
     Error,
 };
 
+use byteorder::{
+    NetworkEndian,
+    ByteOrder,
+};
+
 #[repr(u16)]
 #[derive(Debug, PartialEq)]
 pub enum EtherType {
@@ -11,31 +16,7 @@ pub enum EtherType {
     ARP  = 0x0806,
     IPv6 = 0x86DD,
     ECTP = 0x9000,
-    Unsupported,
-}
-
-impl EtherType {
-    pub fn value(&self) -> u16 {
-        match self {
-            EtherType::IPv4 => 0x0800,
-            EtherType::ARP  => 0x0806,
-            EtherType::IPv6 => 0x86DD,
-            EtherType::ECTP => 0x9000,
-            EtherType::Unsupported => 0
-        }
-    }
-
-    pub fn from_bytes(data: &[u8]) -> EtherType {
-        ((data[0] as u16) << 8 | data[1] as u16).into()
-    }
-
-    pub fn bytes(&self) -> [u8; 2] {
-        let mut bytes = [0; 2];
-        let val = self.value();
-        bytes[1] = (val & 0xFF) as u8;
-        bytes[0] = ((val >> 8) & 0xFF) as u8;
-        bytes
-    }
+    Unsupported = 0xFFFF,
 }
 
 impl From<u16> for EtherType {
@@ -46,6 +27,18 @@ impl From<u16> for EtherType {
             0x86DD => Self::IPv6,
             0x9000 => Self::ECTP,
             _ => Self::Unsupported,
+        }
+    }
+}
+
+impl From<EtherType> for u16 {
+    fn from(ether_type: EtherType) -> Self {
+        match ether_type {
+            EtherType::IPv4 => 0x0800,
+            EtherType::ARP  => 0x0806,
+            EtherType::IPv6 => 0x86DD,
+            EtherType::ECTP => 0x9000,
+            _ => 0xFFFF
         }
     }
 }
@@ -84,8 +77,10 @@ impl Address {
 }
 
 mod field {
-    type Field = core::ops::Range<usize>;
-    type FieldFrom = core::ops::RangeFrom<usize>;
+    use crate::{
+        Field,
+        FieldFrom,
+    };
 
     pub const DESTINATION: Field = 0..6;
     pub const SOURCE: Field = 6..12;
@@ -143,9 +138,8 @@ impl<T: AsRef<[u8]>> Frame<T> {
 
     pub fn ether_type(&self) -> EtherType {
         let buf_ref = self.buffer.as_ref();
-        let mut type_val = [0; 2];
-        type_val.copy_from_slice(&buf_ref[field::ETHERTYPE]);
-        EtherType::from_bytes(&type_val)
+        let raw = NetworkEndian::read_u16(&buf_ref[field::ETHERTYPE]);
+        raw.into()
     }
 
     pub fn payload(&self) -> &[u8] {
@@ -167,7 +161,10 @@ impl<T: AsRef<[u8]> + AsMut<[u8]>> Frame<T> {
 
     pub fn set_ether_type(&mut self, ether_type: EtherType) {
         let buf_mut_ref = self.buffer.as_mut();
-        buf_mut_ref[field::ETHERTYPE].copy_from_slice(&ether_type.bytes())
+        NetworkEndian::write_u16(
+            &mut buf_mut_ref[field::ETHERTYPE], 
+            ether_type.into()
+        )
     }
 
     pub fn payload_mut(&mut self) -> &mut [u8] {

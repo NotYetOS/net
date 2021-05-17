@@ -1,3 +1,10 @@
+#![allow(unused)]
+use byteorder::{
+    ByteOrder, 
+    NetworkEndian
+};
+use super::Protocol;
+
 // 0                   1                   2                   3
 // 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -61,5 +68,46 @@ impl Address {
         !self.is_broadcast() &&
         !self.is_multicast() &&
         !self.is_unspecified()
+    }
+}
+
+mod field {
+    use crate::Field;
+
+    pub const VER_IHL:  usize = 0;
+    pub const DSCP_ECN: usize = 1;
+    pub const LENGTH:   Field = 2..4;
+    pub const IDENT:    Field = 4..6;
+    pub const FLG_OFF:  Field = 6..8;
+    pub const TTL:      usize = 8;
+    pub const PROTOCOL: usize = 9;
+    pub const CHECKSUM: Field = 10..12;
+    pub const SRC_ADDR: Field = 12..16;
+    pub const DST_ADDR: Field = 16..20;
+}
+
+pub struct Packet<T: AsRef<[u8]>> {
+    buffer: T
+}
+
+impl<T: AsRef<[u8]>> Packet<T> {
+    pub fn src_addr(&self) -> Address {
+        let buf_ref = self.buffer.as_ref();
+        Address::from_bytes(&buf_ref[field::SRC_ADDR])
+    }
+
+    pub fn dst_addr(&self) -> Address {
+        let buf_ref = self.buffer.as_ref();
+        Address::from_bytes(&buf_ref[field::DST_ADDR])
+    } 
+
+    pub fn checksum(&self) -> u16 {
+        let buf_ref = self.buffer.as_ref();
+        NetworkEndian::read_u16(&buf_ref[field::CHECKSUM])
+    }
+
+    pub fn protocol(&self) -> Protocol {
+        let buf_ref = self.buffer.as_ref();
+        buf_ref[field::PROTOCOL].into()
     }
 }

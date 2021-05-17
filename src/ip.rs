@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 mod ipv4;
 mod ipv6;
 
@@ -30,10 +32,28 @@ pub enum Protocol {
     IGMP      = 0x02,
     TCP       = 0x06,
     UDP       = 0x11,
-    IPv6Route = 0x2b,
-    IPv6Frag  = 0x2c,
-    Icmpv6    = 0x3a,
-    IPv6NoNxt = 0x3b,
-    IPv6Opts  = 0x3c,
-    Unsupported,
+    IPv6Route = 0x2B,
+    IPv6Frag  = 0x2C,
+    ICMPv6    = 0x3A,
+    IPv6NoNxt = 0x3B,
+    IPv6Opts  = 0x3C,
+    Unsupported = 0xFF,
+}
+
+impl From<u8> for Protocol {
+    fn from(val: u8) -> Self {
+        match val {
+            0x00 => Self::HopByHop,
+            0x01 => Self::ICMP,
+            0x02 => Self::IGMP,
+            0x06 => Self::TCP,
+            0x11 => Self::UDP,
+            0x2B => Self::IPv6Route,
+            0x2C => Self::IPv6Frag,
+            0x3A => Self::ICMPv6,
+            0x3B => Self::IPv6NoNxt,
+            0x3C => Self::IPv6Opts,
+            _ => Self::Unsupported
+        }
+    }
 }

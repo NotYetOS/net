@@ -1,6 +1,9 @@
 mod ethernet;
 mod ip;
 
+pub type Field = core::ops::Range<usize>;
+pub type FieldFrom = core::ops::RangeFrom<usize>;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum Error {

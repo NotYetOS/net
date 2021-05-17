@@ -9,4 +9,8 @@ edition = "2018"
 [dev-dependencies]
 rawsock = "0.3.0"
 
+[dependencies.byteorder]
+version = "1.0"
+default-features = false
+
 [dependencies]
