@@ -127,49 +127,49 @@ impl<T: AsRef<[u8]>> Frame<T> {
     }
 
     pub fn dst_addr(&self) -> Address {
-        let buf_ref = self.buffer.as_ref();
-        Address::from_bytes(&buf_ref[field::DESTINATION])
+        let data = self.buffer.as_ref();
+        Address::from_bytes(&data[field::DESTINATION])
     }
 
     pub fn src_addr(&self) -> Address {
-        let buf_ref = self.buffer.as_ref();
-        Address::from_bytes(&buf_ref[field::SOURCE])
+        let data = self.buffer.as_ref();
+        Address::from_bytes(&data[field::SOURCE])
     }
 
     pub fn ether_type(&self) -> EtherType {
-        let buf_ref = self.buffer.as_ref();
-        let raw = NetworkEndian::read_u16(&buf_ref[field::ETHERTYPE]);
+        let data = self.buffer.as_ref();
+        let raw = NetworkEndian::read_u16(&data[field::ETHERTYPE]);
         raw.into()
     }
 
     pub fn payload(&self) -> &[u8] {
-        let buf_ref = self.buffer.as_ref();
-        &buf_ref[field::PAYLOAD]
+        let data = self.buffer.as_ref();
+        &data[field::PAYLOAD]
     }
 }
 
 impl<T: AsRef<[u8]> + AsMut<[u8]>> Frame<T> {
     pub fn set_dst_addr(&mut self, addr: Address) {
-        let buf_mut_ref = self.buffer.as_mut();
-        buf_mut_ref[field::DESTINATION].copy_from_slice(addr.as_bytes())
+        let data = self.buffer.as_mut();
+        data[field::DESTINATION].copy_from_slice(addr.as_bytes())
     }
 
     pub fn set_src_addr(&mut self, addr: Address) {
-        let buf_mut_ref = self.buffer.as_mut();
-        buf_mut_ref[field::SOURCE].copy_from_slice(addr.as_bytes())
+        let data = self.buffer.as_mut();
+        data[field::SOURCE].copy_from_slice(addr.as_bytes())
     }
 
     pub fn set_ether_type(&mut self, ether_type: EtherType) {
-        let buf_mut_ref = self.buffer.as_mut();
+        let data = self.buffer.as_mut();
         NetworkEndian::write_u16(
-            &mut buf_mut_ref[field::ETHERTYPE], 
+            &mut data[field::ETHERTYPE], 
             ether_type.into()
         )
     }
 
     pub fn payload_mut(&mut self) -> &mut [u8] {
-        let buf_mut_ref = self.buffer.as_mut();
-        &mut buf_mut_ref[field::PAYLOAD]
+        let data = self.buffer.as_mut();
+        &mut data[field::PAYLOAD]
     }
 }
 
