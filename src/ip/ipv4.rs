@@ -330,7 +330,7 @@ mod test {
     use rawsock::open_best_library;
 
     #[test]
-    fn test_ipv4() {
+    fn test_protocol() {
         let mut frame_bytes = vec![0; 64];
         let mut frame = Frame::new_unchecked(&mut frame_bytes);
         frame.set_dst_addr(ethernet::Address([0x00, 0x15, 0x5d, 0x87, 0x8a, 0x86]));
