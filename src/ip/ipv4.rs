@@ -19,6 +19,10 @@ use byteorder::{
     ByteOrder, 
     NetworkEndian,
 };
+use super::{
+    Result,
+    Error,
+};
 use super::Protocol;
 use super::checksum;
 
@@ -92,6 +96,35 @@ pub struct Packet<T: AsRef<[u8]>> {
 }
 
 impl<T: AsRef<[u8]>> Packet<T> {
+    pub fn new_unchecked(buffer: T) -> Packet<T> {
+        Packet { buffer }
+    }
+
+    pub fn new_checked(buffer: T) -> Result<Packet<T>> {
+        let packet = Self::new_unchecked(buffer);
+        packet.check_len()?;
+        Ok(packet)
+    }
+
+    pub fn check_len(&self) -> Result<()> {
+        let len = self.buffer.as_ref().len();
+        if len < field::DST_ADDR.end {
+            Err(Error::Truncated)
+        } else if len < self.header_len() as usize {
+            Err(Error::Truncated)
+        } else if self.header_len() as u16 > self.total_len() {
+            Err(Error::Malformed)
+        } else if len < self.total_len() as usize {
+            Err(Error::Truncated)
+        } else {
+            Ok(())
+        }
+    }
+
+    pub fn into_inner(self) -> T {
+        self.buffer
+    }
+
     pub fn version(&self) -> u8 {
         let data = self.buffer.as_ref();
         data[field::VER_IHL] >> 4
@@ -282,5 +315,56 @@ impl<T: AsRef<[u8]> + AsMut<[u8]>> Packet<T> {
 impl<T: AsRef<[u8]>> AsRef<[u8]> for Packet<T> {
     fn as_ref(&self) -> &[u8] {
         self.buffer.as_ref()
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::ethernet;
+    use crate::ethernet::EtherType;
+    use crate::ethernet::Frame;
+
+    use super::Packet;
+    use super::Protocol;
+
+    use rawsock::open_best_library;
+
+    #[test]
+    fn test_ipv4() {
+        let mut frame_bytes = vec![0; 64];
+        let mut frame = Frame::new_unchecked(&mut frame_bytes);
+        frame.set_dst_addr(ethernet::Address([0x00, 0x15, 0x5d, 0x87, 0x8a, 0x86]));
+        frame.set_src_addr(ethernet::Address([0x00, 0x15, 0x5d, 0x5b, 0xe6, 0xa6]));
+        frame.set_ether_type(EtherType::IPv4);
+
+        let mut bytes = vec![0; 50];
+        let mut packet = Packet::new_unchecked(&mut bytes);
+        packet.set_version(4);
+        packet.set_header_len(20);
+        packet.clear_flags();
+        packet.set_dscp(0);
+        packet.set_ecn(0);
+        packet.set_total_len(30);
+        packet.set_ident(0x0);
+        packet.set_more_frags(false);
+        packet.set_dont_frag(false);
+        packet.set_frag_offset(0);
+        packet.set_hop_limit(0x20);
+        packet.set_protocol(Protocol::Test);
+        packet.set_src_addr(super::Address([171, 24, 16, 35]));
+        packet.set_dst_addr(super::Address([10, 10, 10, 1]));
+        packet.fill_checksum();
+
+        frame.payload_mut().copy_from_slice(packet.as_ref());
+
+        let interf_name = "eth0";
+        let lib = open_best_library().expect("Could not open any packet capturing library");
+        let interf_result = lib.open_interface(&interf_name);
+        match interf_result {
+            Ok(interf) => for i in 0..5 {
+                interf.send(frame.as_ref()).expect("Could not send packet");
+            }
+            Err(_) => {}
+        }
     }
 }

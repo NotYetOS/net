@@ -38,13 +38,13 @@ impl From<EtherType> for u16 {
             EtherType::ARP  => 0x0806,
             EtherType::IPv6 => 0x86DD,
             EtherType::ECTP => 0x9000,
-            _ => 0xFFFF
+            EtherType::Unsupported => 0xFFFF
         }
     }
 }
 
 #[derive(Debug, PartialEq)]
-pub struct Address([u8;6]);
+pub struct Address(pub [u8;6]);
 
 impl Address {
     pub const BROADCAST: Address = Address([0xFF; 6]);
@@ -268,8 +268,8 @@ mod test_dev {
 
         let mut bytes = vec![0xa5; 64];
         let mut frame = Frame::new_unchecked(&mut bytes);
-        frame.set_dst_addr(Address([0x00, 0x15, 0x5d, 0xdb, 0x4d, 0xb4]));
-        frame.set_src_addr(Address([0x00, 0x15, 0x5d, 0x07, 0x2f, 0x7c]));
+        frame.set_dst_addr(Address([0x00, 0x15, 0x5d, 0x87, 0x8a, 0x86]));
+        frame.set_src_addr(Address([0x00, 0x15, 0x5d, 0x5b, 0xe6, 0xa6]));
         frame.set_ether_type(EtherType::ECTP);
         frame.payload_mut().copy_from_slice(&PAYLOAD_BYTES[..]);
 

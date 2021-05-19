@@ -30,7 +30,7 @@ mod checksum {
             accum += (val as u32) << 8;  
         }
         
-        !((accum as u16 >> 16) + accum as u16)
+        !((accum >> 16) as u16 + accum as u16)
     }
 }
 
@@ -63,6 +63,7 @@ pub enum Protocol {
     ICMPv6    = 0x3A,
     IPv6NoNxt = 0x3B,
     IPv6Opts  = 0x3C,
+    Test = 0xFD,
     Unsupported = 0xFF,
 }
 
@@ -97,6 +98,7 @@ impl From<Protocol> for u8 {
             Protocol::ICMPv6 => 0x2C,
             Protocol::IPv6NoNxt => 0x3A,
             Protocol::IPv6Opts => 0x3C,
+            Protocol::Test => 0xFD,
             Protocol::Unsupported => 0xFF,
         }
     }
