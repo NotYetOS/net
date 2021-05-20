@@ -19,12 +19,12 @@ use byteorder::{
     ByteOrder, 
     NetworkEndian,
 };
-use super::{
+use crate::{
     Result,
     Error,
 };
 use super::Protocol;
-use super::checksum;
+use crate::checksum;
 
 #[derive(Debug, PartialEq)]
 pub struct Address(pub [u8; 4]);
@@ -201,9 +201,9 @@ impl<T: AsRef<[u8]>> Packet<T> {
 
     pub fn verify_checksum(&self) -> bool {
         let data = self.buffer.as_ref();
-        checksum::result(
+        checksum::data(
             &data[..self.header_len() as usize]
-        ) == self.checksum()
+        ) == !0
     }
 }
 
@@ -298,10 +298,10 @@ impl<T: AsRef<[u8]> + AsMut<[u8]>> Packet<T> {
 
     pub fn fill_checksum(&mut self) {
         self.set_checksum(0);
-        let data = self.buffer.as_ref();
-        let checksum = checksum::result(
-            &data[..self.header_len() as usize]
-        );
+        let checksum = {
+            let data = self.buffer.as_ref();
+            !checksum::data(data)
+        };
         self.set_checksum(checksum);
     }
     
@@ -323,18 +323,17 @@ mod test {
     use crate::ethernet;
     use crate::ethernet::EtherType;
     use crate::ethernet::Frame;
+    use crate::dev::send_raw_socket;
 
     use super::Packet;
     use super::Protocol;
-
-    use rawsock::open_best_library;
 
     #[test]
     fn test_protocol() {
         let mut frame_bytes = vec![0; 64];
         let mut frame = Frame::new_unchecked(&mut frame_bytes);
-        frame.set_dst_addr(ethernet::Address([0x00, 0x15, 0x5d, 0x87, 0x8a, 0x86]));
-        frame.set_src_addr(ethernet::Address([0x00, 0x15, 0x5d, 0x5b, 0xe6, 0xa6]));
+        frame.set_dst_addr(ethernet::Address(ethernet::test::DST_MAC));
+        frame.set_src_addr(ethernet::Address(ethernet::test::SRC_MAC));
         frame.set_ether_type(EtherType::IPv4);
 
         let mut bytes = vec![0; 50];
@@ -354,17 +353,8 @@ mod test {
         packet.set_src_addr(super::Address([171, 24, 16, 35]));
         packet.set_dst_addr(super::Address([10, 10, 10, 1]));
         packet.fill_checksum();
-
         frame.payload_mut().copy_from_slice(packet.as_ref());
 
-        let interf_name = "eth0";
-        let lib = open_best_library().expect("Could not open any packet capturing library");
-        let interf_result = lib.open_interface(&interf_name);
-        match interf_result {
-            Ok(interf) => for i in 0..5 {
-                interf.send(frame.as_ref()).expect("Could not send packet");
-            }
-            Err(_) => {}
-        }
+        send_raw_socket(frame.as_ref());
     }
 }
