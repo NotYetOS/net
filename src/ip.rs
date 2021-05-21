@@ -1,6 +1,6 @@
 #![allow(unused)]
 
-mod ipv4;
+pub mod ipv4;
 mod ipv6;
 
 use super::{

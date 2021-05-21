@@ -323,7 +323,11 @@ mod test {
     use crate::ethernet;
     use crate::ethernet::EtherType;
     use crate::ethernet::Frame;
-    use crate::dev::send_raw_socket;
+    use crate::dev::{
+        send_raw_socket,
+        DST_MAC,
+        SRC_MAC,
+    };
 
     use super::Packet;
     use super::Protocol;
@@ -332,8 +336,8 @@ mod test {
     fn test_protocol() {
         let mut frame_bytes = vec![0; 64];
         let mut frame = Frame::new_unchecked(&mut frame_bytes);
-        frame.set_dst_addr(ethernet::Address(ethernet::test::DST_MAC));
-        frame.set_src_addr(ethernet::Address(ethernet::test::SRC_MAC));
+        frame.set_dst_addr(ethernet::Address(DST_MAC));
+        frame.set_src_addr(ethernet::Address(SRC_MAC));
         frame.set_ether_type(EtherType::IPv4);
 
         let mut bytes = vec![0; 50];
@@ -346,7 +350,7 @@ mod test {
         packet.set_total_len(30);
         packet.set_ident(0x0);
         packet.set_more_frags(false);
-        packet.set_dont_frag(false);
+        packet.set_dont_frag(true);
         packet.set_frag_offset(0);
         packet.set_hop_limit(0x20);
         packet.set_protocol(Protocol::Test);

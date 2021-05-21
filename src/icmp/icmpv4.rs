@@ -174,3 +174,76 @@ impl<T: AsRef<[u8]> + AsMut<[u8]>> Packet<T> {
         self.set_checksum(checksum)
     }
 }
+
+impl<T: AsRef<[u8]>> AsRef<[u8]> for Packet<T> {
+    fn as_ref(&self) -> &[u8] {
+        self.buffer.as_ref()
+    }
+}
+
+impl<'a, T: AsRef<[u8]> + AsMut<[u8]> + ?Sized> Packet<&'a mut T> {
+    pub fn data_mut(&mut self) -> &mut [u8] {
+        let range = self.header_len()..;
+        let data = self.buffer.as_mut();
+        &mut data[range]
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::ethernet;
+    use crate::ethernet::EtherType;
+    use crate::ethernet::Frame;
+    use crate::ip::ipv4::Packet as IPv4Packet;
+    use crate::ip::ipv4::Address as IPv4Address;
+    use crate::ip::Protocol as IPv4Protocal;
+    use crate::dev::{
+        send_raw_socket,
+        DST_MAC,
+        SRC_MAC,
+    };
+
+    use super::Packet as ICMPPacket;
+    use super::Message;
+
+    #[test]
+    fn test_protocol() {
+        let mut frame_bytes = vec![0; 64];
+        let mut frame = Frame::new_unchecked(&mut frame_bytes);
+        frame.set_dst_addr(ethernet::Address(DST_MAC));
+        frame.set_src_addr(ethernet::Address(SRC_MAC));
+        frame.set_ether_type(EtherType::IPv4);
+
+        let mut bytes = vec![0xa5; 12];
+        let mut packet = ICMPPacket::new_unchecked(&mut bytes);
+        packet.set_msg_type(Message::EchoRequest);
+        packet.set_msg_code(0);
+        packet.set_echo_ident(0x1234);
+        packet.set_echo_seq_no(0xabcd);
+        packet.data_mut().copy_from_slice("ABCD".as_ref());
+        packet.fill_checksum();
+
+        let mut bytes = vec![0; 50];
+        let mut ipv4_packet = IPv4Packet::new_unchecked(&mut bytes);
+        ipv4_packet.set_version(4);
+        ipv4_packet.set_header_len(20);
+        ipv4_packet.clear_flags();
+        ipv4_packet.set_dscp(0);
+        ipv4_packet.set_ecn(0);
+        ipv4_packet.set_total_len(32);
+        ipv4_packet.set_ident(0x0);
+        ipv4_packet.set_more_frags(false);
+        ipv4_packet.set_dont_frag(true);
+        ipv4_packet.set_frag_offset(0);
+        ipv4_packet.set_hop_limit(0x20);
+        ipv4_packet.set_protocol(IPv4Protocal::ICMP);
+        ipv4_packet.set_src_addr(IPv4Address([172, 27, 60, 82]));
+        ipv4_packet.set_dst_addr(IPv4Address([10, 10, 10, 1]));
+        ipv4_packet.fill_checksum();
+        
+        ipv4_packet.payload_mut().copy_from_slice(packet.as_ref());
+        frame.payload_mut().copy_from_slice(ipv4_packet.as_ref());
+
+        send_raw_socket(frame.as_ref());
+    }
+}

@@ -98,6 +98,10 @@ pub mod checksum {
 #[cfg(test)]
 pub mod dev {
     use rawsock::open_best_library;
+
+    pub static SRC_MAC: [u8; 6] = [0x00, 0x15, 0x5d, 0x57, 0x0c, 0x4f];
+    pub static DST_MAC: [u8; 6] = [0x00, 0x15, 0x5d, 0x8b, 0x67, 0x71];
+    
     pub fn send_raw_socket(data: &[u8]) {
         let interf_name = "eth0";
         let lib = open_best_library().expect("Could not open any packet capturing library");
