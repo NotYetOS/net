@@ -1,6 +1,5 @@
-mod ethernet;
-mod ip;
-mod icmp;
+mod protocol;
+mod socket;
 
 pub type Field = core::ops::Range<usize>;
 pub type FieldFrom = core::ops::RangeFrom<usize>;
@@ -98,9 +97,13 @@ pub mod checksum {
 #[cfg(test)]
 pub mod dev {
     use rawsock::open_best_library;
+    use mac_address;
 
-    pub static SRC_MAC: [u8; 6] = [0x00, 0x15, 0x5d, 0x57, 0x0c, 0x4f];
-    pub static DST_MAC: [u8; 6] = [0x00, 0x15, 0x5d, 0x8b, 0x67, 0x71];
+    pub fn src_mac() -> [u8; 6] {
+        mac_address::mac_address_by_name("eth0").unwrap().unwrap().bytes()
+    }
+
+    pub static DST_MAC: [u8; 6] = [0xFF; 6];
     
     pub fn send_raw_socket(data: &[u8]) {
         let interf_name = "eth0";

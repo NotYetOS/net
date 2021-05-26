@@ -191,16 +191,16 @@ impl<'a, T: AsRef<[u8]> + AsMut<[u8]> + ?Sized> Packet<&'a mut T> {
 
 #[cfg(test)]
 mod test {
-    use crate::ethernet;
-    use crate::ethernet::EtherType;
-    use crate::ethernet::Frame;
-    use crate::ip::ipv4::Packet as IPv4Packet;
-    use crate::ip::ipv4::Address as IPv4Address;
-    use crate::ip::Protocol as IPv4Protocal;
+    use crate::protocol::ethernet;
+    use crate::protocol::ethernet::EtherType;
+    use crate::protocol::ethernet::Frame;
+    use crate::protocol::ip::ipv4::Packet as IPv4Packet;
+    use crate::protocol::ip::ipv4::Address as IPv4Address;
+    use crate::protocol::ip::Protocol as IPv4Protocal;
     use crate::dev::{
         send_raw_socket,
         DST_MAC,
-        SRC_MAC,
+        src_mac,
     };
 
     use super::Packet as ICMPPacket;
@@ -208,13 +208,13 @@ mod test {
 
     #[test]
     fn test_protocol() {
-        let mut frame_bytes = vec![0; 64];
+        let mut frame_bytes = vec![0; 14 + 32];
         let mut frame = Frame::new_unchecked(&mut frame_bytes);
         frame.set_dst_addr(ethernet::Address(DST_MAC));
-        frame.set_src_addr(ethernet::Address(SRC_MAC));
+        frame.set_src_addr(ethernet::Address(src_mac()));
         frame.set_ether_type(EtherType::IPv4);
 
-        let mut bytes = vec![0xa5; 12];
+        let mut bytes = vec![0; 12];
         let mut packet = ICMPPacket::new_unchecked(&mut bytes);
         packet.set_msg_type(Message::EchoRequest);
         packet.set_msg_code(0);
@@ -223,7 +223,7 @@ mod test {
         packet.data_mut().copy_from_slice("ABCD".as_ref());
         packet.fill_checksum();
 
-        let mut bytes = vec![0; 50];
+        let mut bytes = vec![0; 32];
         let mut ipv4_packet = IPv4Packet::new_unchecked(&mut bytes);
         ipv4_packet.set_version(4);
         ipv4_packet.set_header_len(20);

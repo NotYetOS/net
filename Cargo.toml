@@ -8,6 +8,7 @@ edition = "2018"
 
 [dev-dependencies]
 rawsock = "0.3.0"
+mac_address = "1.1.1"
 
 [dependencies.byteorder]
 version = "1.0"

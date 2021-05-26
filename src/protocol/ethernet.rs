@@ -1,5 +1,5 @@
 #![allow(unused)]
-use super::{
+use crate::{
     Result,
     Error,
 };
@@ -176,36 +176,5 @@ impl<T: AsRef<[u8]> + AsMut<[u8]>> Frame<T> {
 impl<T: AsRef<[u8]>> AsRef<[u8]> for Frame<T> {
     fn as_ref(&self) -> &[u8] {
         self.buffer.as_ref()
-    }
-}
-
-#[cfg(test)]
-pub mod test {
-    use super::*;
-    use crate::dev::{
-        send_raw_socket,
-        DST_MAC,
-        SRC_MAC,
-    };
-
-    static PAYLOAD_BYTES: [u8; 50] =
-    [0xaa, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-     0x00, 0xff];
-     
-    #[test]
-    fn test_protocol() {
-        let mut bytes = vec![0xa5; 64];
-        let mut frame = Frame::new_unchecked(&mut bytes);
-        frame.set_dst_addr(Address(DST_MAC));
-        frame.set_src_addr(Address(SRC_MAC));
-        frame.set_ether_type(EtherType::ECTP);
-        frame.payload_mut().copy_from_slice(&PAYLOAD_BYTES[..]);
-
-        send_raw_socket(frame.as_ref());
     }
 }

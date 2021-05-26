@@ -3,9 +3,9 @@
 pub mod ipv4;
 mod ipv6;
 
-use super::{
-    Error, 
-    Result
+use crate::{
+    Result,
+    Error,
 };
 
 mod checksum {
